@@ -1,0 +1,4 @@
+{
+  "mongoURI": "mongodb+srv://arsenii123:arsenii123@devconnector.rvffb.mongodb.net/DevConnector?retryWrites=true&w=majority",
+  "jwtSecret": "mysecrettoken"
+}
