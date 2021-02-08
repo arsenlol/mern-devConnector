@@ -1,4 +1,6 @@
 {
   "mongoURI": "mongodb+srv://arsenii123:arsenii123@devconnector.rvffb.mongodb.net/DevConnector?retryWrites=true&w=majority",
-  "jwtSecret": "mysecrettoken"
+  "jwtSecret": "mysecrettoken",
+  "githubClientId": "166f6aa1145567086b22",
+  "githubSecret": "10ccdd4389af4ff1e4418b9336b83c46af096680"
 }
