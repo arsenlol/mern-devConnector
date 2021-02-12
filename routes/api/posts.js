@@ -169,7 +169,7 @@ router.delete("/like/:id", auth, async (req, res) => {
 });
 
 // @route       POST api/posts/comment/:id
-// @desc        Comment a post
+// @desc        Comment on a post
 // @access      Private
 router.post(
   "/comment/:id",
@@ -206,5 +206,45 @@ router.post(
     }
   }
 );
+
+// @route       DELETE api/posts/comment/:id
+// @desc        Delete a comment
+// @access      Private
+router.delete("/comment/:id/:comment_id", auth, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id).populate("comments");
+
+    // Check if post has already been liked
+    const commentInPost = post.comments.find(
+      (comment) => comment.id === req.params.comment_id
+    );
+    if (!commentInPost) {
+      return res.status(400).json({ msg: "Comment does not exist" });
+    }
+    // Check user
+    if (commentInPost.user.toString() !== req.user.id) {
+      return res.status(400).json({ msg: "User not authorized" });
+    }
+    const removeFromPostIndex = post.comments.indexOf(commentInPost);
+    post.comments.splice(removeFromPostIndex, 1);
+
+    const user = await User.findById(req.user.id).populate("comments");
+    const removeFromUserIndex = user.comments.findIndex(
+      (comment) => comment.post.toString() === post.id
+    );
+    user.comments.splice(removeFromUserIndex, 1);
+
+    await Comment.deleteOne({ _id: req.params.comment_id });
+    await post.save();
+    await user.save();
+    return res.json(post);
+  } catch (err) {
+    console.error(err);
+    if (err.kind == "ObjectId") {
+      return res.status(404).json({ msg: "Post not found" });
+    }
+    return res.status(500).send("Server error");
+  }
+});
 
 module.exports = router;
