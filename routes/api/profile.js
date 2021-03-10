@@ -173,8 +173,8 @@ router.put(
     ],
   ],
   async (req, res) => {
-    const error = validationResult(req);
-    if (!error.isEmpty()) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -221,10 +221,16 @@ router.delete("/experience/:exp_id", auth, async (req, res) => {
     const removeIndex = profile.experience
       .map((item) => item.id)
       .indexOf(req.params.exp_id);
+    if (removeIndex < 0) {
+      return res.status(404).json({errors: [{message: 'Wrong experience id'}]})
+    }
     profile.experience.splice(removeIndex, 1);
     await profile.save();
     return res.json(profile);
-  } catch (err) {}
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
 });
 
 // @route       PUT api/profile/education
@@ -242,8 +248,8 @@ router.put(
     ],
   ],
   async (req, res) => {
-    const error = validationResult(req);
-    if (!error.isEmpty()) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -287,13 +293,19 @@ router.delete("/education/:edu_id", auth, async (req, res) => {
     const profile = await Profile.findOne({ user: req.user.id });
 
     // Get remove index
-    const removeIndex = profile.experience
+    const removeIndex = profile.education
       .map((item) => item.id)
       .indexOf(req.params.edu_id);
+    if (removeIndex < 0) {
+      return res.status(404).json({errors: [{message: 'Wrong experience id'}]})
+    }
     profile.education.splice(removeIndex, 1);
     await profile.save();
     return res.json(profile);
-  } catch (err) {}
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
 });
 
 // @route       GET api/profile/github/:username
