@@ -7,6 +7,7 @@ const config = require("config");
 
 const Profile = require("../../models/Profile");
 const User = require("../../models/User");
+const Post = require("../../models/Post");
 
 // @route       GET api/profile/me
 // @desc        Get current users profile
@@ -147,7 +148,8 @@ router.get("/user/:user_id", async (req, res) => {
 // @access      Private
 router.delete("/", auth, async (req, res) => {
   try {
-    // @todo - remove users posts
+    // Remove users posts
+    await Post.deleteMany({ user: req.user.id });
     // Remove profile
     await Profile.findOneAndRemove({ user: req.user.id });
     // Remove user
@@ -222,7 +224,9 @@ router.delete("/experience/:exp_id", auth, async (req, res) => {
       .map((item) => item.id)
       .indexOf(req.params.exp_id);
     if (removeIndex < 0) {
-      return res.status(404).json({errors: [{message: 'Wrong experience id'}]})
+      return res
+        .status(404)
+        .json({ errors: [{ message: "Wrong experience id" }] });
     }
     profile.experience.splice(removeIndex, 1);
     await profile.save();
@@ -297,7 +301,9 @@ router.delete("/education/:edu_id", auth, async (req, res) => {
       .map((item) => item.id)
       .indexOf(req.params.edu_id);
     if (removeIndex < 0) {
-      return res.status(404).json({errors: [{message: 'Wrong experience id'}]})
+      return res
+        .status(404)
+        .json({ errors: [{ message: "Wrong experience id" }] });
     }
     profile.education.splice(removeIndex, 1);
     await profile.save();
