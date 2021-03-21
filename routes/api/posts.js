@@ -7,6 +7,7 @@ const Post = require("../../models/Post");
 const User = require("../../models/User");
 const Like = require("../../models/Like");
 const Comment = require("../../models/Comment");
+const { asyncForEach } = require("../../utils");
 
 // @route       POST api/posts
 // @desc        Create posts
@@ -45,7 +46,10 @@ router.post(
 // @access      Private
 router.get("/", auth, async (req, res) => {
   try {
-    const posts = await Post.find().sort({ date: -1 });
+    const posts = await Post.find()
+      .populate("likes")
+      .populate("comments")
+      .sort({ date: -1 });
     return res.json(posts);
   } catch (err) {
     console.error(err);
@@ -58,7 +62,9 @@ router.get("/", auth, async (req, res) => {
 // @access      Private
 router.get("/:id", auth, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.id)
+      .populate("likes")
+      .populate("comments");
     if (!post) {
       return res.status(404).json({ msg: "Post not found" });
     }
@@ -84,7 +90,28 @@ router.delete("/:id", auth, async (req, res) => {
     if (!post) {
       return res.status(404).json({ msg: "Post not found" });
     }
-    await post.remove();
+    const likes = await Like.find({ post: req.params.id });
+    const comments = await Comment.find({ post: req.params.id });
+
+    await Promise.all([
+      await Like.deleteMany({ post: req.params.id }),
+      await Comment.deleteMany({ post: req.params.id }),
+      await post.remove(),
+      await asyncForEach(likes, async (like) => {
+        const user = await User.findById(like.user);
+        user.likes = user.likes.filter(
+          (userLike) => userLike._id.toString() !== like.id
+        );
+        await user.save();
+      }),
+      await asyncForEach(comments, async (comment) => {
+        const user = await User.findById(comment.user);
+        user.comments = user.comments.filter(
+          (userComment) => userComment._id.toString() !== comment.id
+        );
+        await user.save();
+      }),
+    ]).catch((err) => console.log(err));
 
     return res.json({ msg: "Post deleted" });
   } catch (err) {
@@ -92,7 +119,7 @@ router.delete("/:id", auth, async (req, res) => {
     if (err.kind === "ObjectId") {
       return res.status(404).json({ msg: "Post not found" });
     }
-    return res.status(500).send("Server error");
+    return res.status(500).json("Server error");
   }
 });
 
@@ -180,7 +207,7 @@ router.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
       }
-      const post = await Post.findById(req.params.id);
+      const post = await Post.findById(req.params.id).populate('comments');
       const user = await User.findById(req.user.id);
 
       const comment = new Comment({
@@ -196,7 +223,7 @@ router.post(
       await comment.save();
       await user.save();
       await post.save();
-      return res.json(comment);
+      return res.json(post);
     } catch (err) {
       console.error(err);
       if (err.kind === "ObjectId") {
