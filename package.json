@@ -10,7 +10,7 @@
     "server-dev": "nodemon server",
     "server-prod": "node server.js",
     "client": "npm start --prefix client",
-    "build": "npm install && (cd ./client && npm install)"
+    "build": "npm install && (cd ./client && npm install && npm run build)"
   },
   "author": "",
   "license": "ISC",
